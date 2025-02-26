@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modern Task Flow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <style>
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<!-- Agregamos dark: en body para alternar entre fondo claro y oscuro -->
+
+<body class="bg-gray-50 dark:bg-gray-900 dark:text-gray-200 min-h-screen p-8 font-sans">
+  <div class="max-w-7xl mx-auto space-y-8">
+    <!-- Header con selector de tema -->
+    <div class="flex items-center justify-between">
+      <h1 class="text-3xl font-light text-gray-800 dark:text-gray-100">Task Flow</h1>
+      <div class="flex items-center gap-2">
+        <button onclick="exportData()"
+          class="px-4 py-2 bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800 rounded-lg transition-all">
+          <i class="fas fa-file-export mr-2"></i>Exportar
+        </button>
+        <label
+          class="px-4 py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 rounded-lg transition-all cursor-pointer">
+          <i class="fas fa-file-import mr-2"></i>Importar
+          <input type="file" class="hidden" accept=".json" onchange="importData(event)" />
+        </label>
+        <!-- Selector de tema -->
+        <!-- Reemplazar el select actual con este código -->
+        <div class="relative group">
+          <button
+            class="px-4 py-2 flex items-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all border border-gray-200 dark:border-gray-700">
+            <i class="fas fa-palette text-purple-600 dark:text-purple-400"></i>
+            <span class="text-gray-700 dark:text-gray-300">Tema</span>
+            <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+          </button>
+          <div
+            class="hidden group-hover:block absolute right-0 mt-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 z-10 transition-all">
+            <div class="p-2 space-y-1">
+              <button onclick="setTheme('system')"
+                class="w-full px-3 py-2.5 flex items-center gap-2 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                <i class="fas fa-desktop w-5 text-gray-400"></i>
+                Sistema
+              </button>
+              <button onclick="setTheme('light')"
+                class="w-full px-3 py-2.5 flex items-center gap-2 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                <i class="fas fa-sun w-5 text-yellow-500"></i>
+                Claro
+              </button>
+              <button onclick="setTheme('dark')"
+                class="w-full px-3 py-2.5 flex items-center gap-2 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                <i class="fas fa-moon w-5 text-purple-500"></i>
+                Oscuro
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columnas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-180px)]">
+      <!-- Columna Por Hacer -->
+      <div
+        class="bg-green-50 dark:bg-green-800 p-4 rounded-xl shadow-sm border border-green-100 dark:border-green-700 flex flex-col">
+        <div class="flex items-center justify-between mb-4 px-2">
+          <h2 class="font-medium text-green-700 dark:text-green-300">Por Hacer</h2>
+          <span class="bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-200 px-2 py-1 rounded-full text-xs"
+            id="todo-count">0</span>
+        </div>
+        <button onclick="openCreateModal()"
+          class="mb-4 w-full py-2.5 text-green-600 bg-green-100 hover:bg-green-200 dark:text-green-300 dark:bg-green-900 dark:hover:bg-green-800 rounded-lg border border-transparent transition-all">
+          <i class="fas fa-plus mr-2"></i>Nueva Tarea
+        </button>
+        <div class="space-y-2 flex-1 overflow-y-auto custom-scroll" id="todo-column"></div>
+      </div>
+
+      <!-- Columna En Proceso -->
+      <div
+        class="bg-yellow-50 dark:bg-yellow-800 p-4 rounded-xl shadow-sm border border-yellow-100 dark:border-yellow-700 flex flex-col">
+        <div class="flex items-center justify-between mb-4 px-2">
+          <h2 class="font-medium text-yellow-700 dark:text-yellow-300">En Proceso</h2>
+          <span
+            class="bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-200 px-2 py-1 rounded-full text-xs"
+            id="in-progress-count">0</span>
+        </div>
+        <div class="space-y-2 flex-1 overflow-y-auto custom-scroll" id="in-progress-column"></div>
+      </div>
+
+      <!-- Columna Terminado -->
+      <div
+        class="bg-red-50 dark:bg-red-800 p-4 rounded-xl shadow-sm border border-red-100 dark:border-red-700 flex flex-col">
+        <div class="flex items-center justify-between mb-4 px-2">
+          <h2 class="font-medium text-red-700 dark:text-red-300">Terminado</h2>
+          <span class="bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-200 px-2 py-1 rounded-full text-xs"
+            id="done-count">0</span>
+        </div>
+        <div class="space-y-2 flex-1 overflow-y-auto custom-scroll" id="done-column"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Crear/Editar Tarea -->
+  <div id="task-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-medium" id="modal-title">Nueva Tarea</h3>
+        <button onclick="closeModal()"
+          class="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-400">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4">
+        <div class="error-message"></div>
+        <div class="space-y-1">
+          <label class="text-sm text-gray-600 dark:text-gray-300">Título</label>
+          <input type="text" id="task-title" placeholder="Nombre de la tarea"
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 dark:bg-gray-700 dark:text-gray-200 outline-none">
+        </div>
+        <div class="space-y-1">
+          <label class="text-sm text-gray-600 dark:text-gray-300">Subtareas</label>
+          <div class="subitem-inputs space-y-2"></div>
+          <button onclick="addSubitemInput()"
+            class="w-full py-2 text-blue-600 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-900 rounded-lg border border-dashed border-blue-200">
+            <i class="fas fa-plus mr-2"></i>Agregar Subtarea
+          </button>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+        <button onclick="closeModal()"
+          class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+          Cancelar
+        </button>
+        <button onclick="saveTask()"
+          class="px-4 py-2 bg-blue-400 hover:bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg"
+          id="save-button">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalles -->
+  <div id="detail-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 id="detail-title" class="text-lg font-medium"></h3>
+        <button onclick="closeDetailModal()"
+          class="text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-400">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto custom-scroll p-4">
+        <ul id="detail-subitems" class="space-y-2">
+          <!-- Los subitems se renderizarán aquí según el estado -->
+        </ul>
+      </div>
+      <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <div id="complete-button-container"></div>
+        <button onclick="closeDetailModal()"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmación -->
+  <div id="confirm-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 id="confirm-title" class="text-lg font-medium"></h3>
+      </div>
+      <div class="p-4 space-y-4">
+        <p id="confirm-message" class="text-gray-600 dark:text-gray-300"></p>
+        <div class="flex justify-end gap-2">
+          <button onclick="closeConfirmModal()"
+            class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+            Cancelar
+          </button>
+          <button onclick="handleConfirm()"
+            class="px-4 py-2 bg-red-400 hover:bg-red-500 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script principal + Modo Oscuro -->
+  <script>
+    let tasks = [];
+    let pendingAction = null;
+    let pendingTaskId = null;
+    let currentEditingTaskId = null;
+    const STORAGE_KEY = 'todoAppData';
+
+    // Funciones de persistencia
+    function loadFromStorage() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        tasks = JSON.parse(savedData);
+        renderTasks();
+      }
+    }
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+    function autoSave() {
+      saveToStorage();
+    }
+
+    // Funciones de export/import
+    async function exportData() {
+      try {
+        const dataStr = JSON.stringify(tasks, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const fileName = `todoapp-${new Date().toISOString().slice(0, 10)}.json`;
+        if ('showSaveFilePicker' in window) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+        } else {
+          const link = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          link.href = url;
+          link.download = fileName;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          alert('Error al exportar: ' + error.message);
+        }
+      }
+    }
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (!Array.isArray(importedData)) throw new Error('Formato inválido');
+          tasks = importedData;
+          renderTasks();
+          autoSave();
+          alert('Datos importados correctamente!');
+        } catch (error) {
+          alert('Error al importar: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Funciones de modales
+    function toggleModal(modal, show) {
+      if (show) {
+        $(modal).removeClass('hidden');
+        setTimeout(() => $(modal).css('opacity', '1'), 10);
+      } else {
+        $(modal).css('opacity', '0');
+        setTimeout(() => $(modal).addClass('hidden'), 300);
+      }
+    }
+    function openCreateModal() {
+      currentEditingTaskId = null;
+      $('#modal-title').text('Nueva Tarea');
+      $('#save-button').text('Guardar');
+      $('#task-title').val('');
+      $('.subitem-inputs').empty();
+      toggleModal('#task-modal', true);
+    }
+    function openEditModal(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      currentEditingTaskId = taskId;
+      $('#modal-title').text('Editar Tarea');
+      $('#save-button').text('Guardar Cambios');
+      $('#task-title').val(task.title);
+      $('.subitem-inputs').empty();
+      task.subitems.forEach(subitem => {
+        $('.subitem-inputs').append(`
+                <div class="flex items-center gap-2 animate-fade-in">
+                    <textarea 
+                        class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-200 dark:bg-gray-700 dark:text-gray-200 resize-none" 
+                        rows="1"
+                        placeholder="Subtarea">${subitem.text}</textarea>
+                    <button class="text-red-400 hover:text-red-600 transition-colors" 
+                            onclick="$(this).parent().remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `);
+      });
+      toggleModal('#task-modal', true);
+    }
+    function addSubitemInput() {
+      $('.subitem-inputs').append(`
+            <div class="flex items-center gap-2 animate-fade-in">
+                <textarea 
+                    class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-200 dark:bg-gray-700 dark:text-gray-200 resize-none" 
+                    rows="1"
+                    placeholder="Subtarea"></textarea>
+                <button class="text-red-400 hover:text-red-600 transition-colors" 
+                        onclick="$(this).parent().remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `);
+    }
+    function closeModal() { toggleModal('#task-modal', false); }
+    function closeDetailModal() { toggleModal('#detail-modal', false); }
+    function closeConfirmModal() { toggleModal('#confirm-modal', false); }
+
+    // Funcionalidad principal
+    function saveTask() {
+      const title = $('#task-title').val().trim();
+      const subitems = $('.subitem-inputs textarea').map((i, el) => $(el).val().trim()).get().filter(text => text !== '');
+      let errors = [];
+      $('#task-title').removeClass('border-red-500');
+      $('#subitems-container').removeClass('border-red-500');
+      $('.error-message').remove();
+      if (!title) {
+        $('#task-title').addClass('border-red-500');
+        errors.push('El título es obligatorio');
+      }
+      if (subitems.length === 0) {
+        $('#subitems-container').addClass('border-red-500');
+        errors.push('Debe agregar al menos un subtarea');
+      }
+      if (errors.length > 0) {
+        $('#task-modal .bg-white').prepend(`
+                <div class="error-message bg-red-50 text-red-600 p-3 rounded-lg mb-4 border border-red-200">
+                    ${errors.join('<br>')}
+                </div>
+            `);
+        return;
+      }
+      if (currentEditingTaskId) {
+        const task = tasks.find(t => t.id === currentEditingTaskId);
+        task.title = title;
+        task.subitems = subitems.map(text => ({
+          text,
+          completed: task.subitems.find(s => s.text === text)?.completed || false
+        }));
+      } else {
+        tasks.push({
+          id: Date.now(),
+          title,
+          subitems: subitems.map(text => ({ text, completed: false })),
+          status: 'todo'
+        });
+      }
+      renderTasks();
+      toggleModal('#task-modal', false);
+      autoSave();
+    }
+    function renderTasks() {
+      renderColumn('todo', '#todo-column');
+      renderColumn('in-progress', '#in-progress-column');
+      renderColumn('done', '#done-column');
+      $('#todo-count').text(tasks.filter(t => t.status === 'todo').length);
+      $('#in-progress-count').text(tasks.filter(t => t.status === 'in-progress').length);
+      $('#done-count').text(tasks.filter(t => t.status === 'done').length);
+    }
+    function renderColumn(status, selector) {
+      const column = $(selector).empty();
+      tasks.filter(task => task.status === status).forEach(task => {
+        const card = $(`
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-colors group">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-gray-700 dark:text-gray-200 truncate">${task.title}</h4>
+                        <div class="relative">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="hidden absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 group-hover:block">
+                                ${status === 'todo' ? `
+                                    <button onclick="startTask(${task.id})" class="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <i class="fas fa-play mr-2 text-blue-500"></i>Empezar
+                                    </button>
+                                    <button onclick="openEditModal(${task.id})" class="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <i class="fas fa-edit mr-2 text-yellow-500"></i>Editar
+                                    </button>
+                                ` : ''}
+                                ${status === 'in-progress' ? `
+                                    <button onclick="showConfirmModal('move', ${task.id})" class="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <i class="fas fa-undo mr-2 text-purple-500"></i>Regresar
+                                    </button>
+                                ` : ''}
+                                <button onclick="showDetails(${task.id})" class="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <i class="fas fa-eye mr-2 text-green-500"></i>Detalles
+                                </button>
+                                <button onclick="showConfirmModal('delete', ${task.id})" class="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <i class="fas fa-trash mr-2"></i>Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        column.append(card);
+      });
+    }
+    function showConfirmModal(action, taskId) {
+      pendingAction = action;
+      pendingTaskId = taskId;
+      if (action === 'delete') {
+        $('#confirm-title').html('<i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>Eliminar Tarea');
+        $('#confirm-message').text('¿Estás seguro de eliminar esta tarea permanentemente?');
+      } else if (action === 'move') {
+        $('#confirm-title').html('<i class="fas fa-exclamation-circle mr-2 text-yellow-500"></i>Regresar Tarea');
+        $('#confirm-message').text('Al regresar la tarea se resetearán todos los subitems.');
+      }
+      toggleModal('#confirm-modal', true);
+    }
+    function handleConfirm() {
+      if (pendingAction === 'delete') {
+        tasks = tasks.filter(t => t.id !== pendingTaskId);
+      } else if (pendingAction === 'move') {
+        const task = tasks.find(t => t.id === pendingTaskId);
+        task.status = 'todo';
+        task.subitems.forEach(sub => sub.completed = false);
+      }
+      renderTasks();
+      toggleModal('#confirm-modal', false);
+      autoSave();
+    }
+    function startTask(id) {
+      const task = tasks.find(t => t.id === id);
+      task.status = 'in-progress';
+      renderTasks();
+      autoSave();
+    }
+    function showDetails(id) {
+      const task = tasks.find(t => t.id === id);
+      $('#detail-title').text(task.title);
+      $('#detail-subitems').empty();
+      if (task.status === 'in-progress') {
+        task.subitems.forEach((subitem, index) => {
+          $('#detail-subitems').append(`
+                    <li class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <label class="flex items-center cursor-pointer w-full">
+                            <input type="checkbox" ${subitem.completed ? 'checked' : ''} 
+                                onchange="toggleSubitem(${id}, ${index})"
+                                class="w-4 h-4 text-blue-500 border-2 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-2 ${subitem.completed ? 'line-through text-gray-700 dark:text-gray-100' : 'text-gray-700 dark:text-gray-100'}">
+                                ${subitem.text}
+                            </span>
+                        </label>
+                    </li>
+                `);
+        });
+        $('#complete-button-container').html(`
+                <button onclick="completeTask(${id})" 
+                    class="px-4 py-2 bg-blue-400 hover:bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg ${task.subitems.every(s => s.completed) ? '' : 'hidden'}">
+                    <i class="fas fa-check mr-2"></i>Marcar como Completado
+                </button>
+            `);
+      } else {
+        task.subitems.forEach(subitem => {
+          $('#detail-subitems').append(`
+                    <li class="p-2 text-gray-700 dark:text-gray-200">
+                        ${subitem.text}
+                    </li>
+                `);
+        });
+        $('#complete-button-container').empty();
+      }
+      toggleModal('#detail-modal', true);
+    }
+    function toggleSubitem(taskId, index) {
+      const task = tasks.find(t => t.id === taskId);
+      task.subitems[index].completed = !task.subitems[index].completed;
+      const checkbox = $(`#detail-subitems input:eq(${index})`);
+      const span = checkbox.next('span');
+      span.toggleClass('line-through text-gray-400');
+      const allCompleted = task.subitems.every(s => s.completed);
+      $('#complete-button-container button').toggleClass('hidden', !allCompleted);
+      autoSave();
+    }
+    function completeTask(id) {
+      tasks.find(t => t.id === id).status = 'done';
+      renderTasks();
+      toggleModal('#detail-modal', false);
+      autoSave();
+    }
+
+    // Inicialización y modo oscuro
+    $(document).ready(() => {
+      loadFromStorage();
+      renderTasks();
+      $(window).click(e => {
+        if (e.target.id === 'task-modal') closeModal();
+        if (e.target.id === 'detail-modal') closeDetailModal();
+        if (e.target.id === 'confirm-modal') closeConfirmModal();
+      });
+
+      // Aplicar tema según preferencia almacenada o del sistema
+      let storedTheme = localStorage.getItem('theme') || 'system';
+      $('#theme-selector').val(storedTheme);
+      applyTheme(storedTheme);
+
+      $('#theme-selector').on('change', function () {
+        let selectedTheme = $(this).val();
+        localStorage.setItem('theme', selectedTheme);
+        applyTheme(selectedTheme);
+      });
+
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          let storedTheme = localStorage.getItem('theme') || 'system';
+          if (storedTheme === 'system') {
+            applyTheme('system');
+          }
+        });
+      }
+    });
+    window.addEventListener('beforeunload', () => autoSave());
+
+    function setTheme(theme) {
+      applyTheme(theme);
+      // Actualizar el texto del botón principal
+      const themeNames = {
+        system: 'Sistema',
+        light: 'Claro',
+        dark: 'Oscuro'
+      };
+      $('.group button span').text(themeNames[theme]);
+      localStorage.setItem('theme', theme);
+    }
+
+    // Función para aplicar tema
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        $('html').addClass('dark');
+      } else if (theme === 'light') {
+        $('html').removeClass('dark');
+      } else if (theme === 'system') {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          $('html').addClass('dark');
+        } else {
+          $('html').removeClass('dark');
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
