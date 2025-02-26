@@ -34,9 +34,7 @@ Prueba la aplicación directamente:
 2. **Edita los archivos** directamente en GitHub
 3. Crea un **Pull Request** con tus cambios
 
-## 📄 Licencia
-Este proyecto usa la licencia [MIT](LICENSE).  
-_Creado con ❤dedicación por Cheskito_
+_Creado con dedicación por Cheskito_
 
 ---
 
